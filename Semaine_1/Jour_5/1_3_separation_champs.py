@@ -38,8 +38,8 @@ def parse_entry(line):
 	# on vérifie la cohérence
 	expected_hex_digits = scriptSig_end + 8
 
-	# if expected_hex_digits != len(line):
-	# 	raise ValueError("Expected {} hex digits, got {}".format(expected_hex_digits, len(line)))
+	if expected_hex_digits != len(line):
+	 	raise ValueError("Expected {} hex digits, got {}".format(expected_hex_digits, len(line)))
 
 	# Séquence (sur 4 octets)
 	sequence = line[scriptSig_end:expected_hex_digits]
@@ -64,6 +64,7 @@ def main():
 			entry[2],
 			entry[3],
 			entry[4]))
+		e_count += 1
 
 
 if __name__ == "__main__":

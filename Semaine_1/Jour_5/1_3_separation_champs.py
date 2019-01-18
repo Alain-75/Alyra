@@ -28,10 +28,6 @@ def parse_entry(line):
 	previous_hash = line[:64] # Le hash de la transaction passée où sont les bitcoins à dépenser (sur 32 octets) 
 	out_index = line[64:72] # L’index de la sortie (output) de cette transaction concernée (sur 4 octets)
 
-	print(previous_hash)
-	print(out_index)
-	print(line[72:88])
-
 	# Longueur de ScriptSig (varInt)
 	varInt_size, scriptSig_length = parse_varInt(line[72:])
 
@@ -41,6 +37,9 @@ def parse_entry(line):
 
 	# on vérifie la cohérence
 	expected_hex_digits = scriptSig_end + 8
+
+	# if expected_hex_digits != len(line):
+	# 	raise ValueError("Expected {} hex digits, got {}".format(expected_hex_digits, len(line)))
 
 	# Séquence (sur 4 octets)
 	sequence = line[scriptSig_end:expected_hex_digits]
@@ -58,7 +57,7 @@ def main():
 
 	e_count = 0
 	for entry in results:
-		print("entry {}:\n\t|__ prev_hash {}\n\t|__ out_index {}\n\t|__ scriptSig_length {}\n\t|__ scriptSig {}\n\t|__ sequence {}".format(
+		print("entry {}:\n\t|__ prev_hash '{}'\n\t|__ out_index '{}'\n\t|__ sig_length '{}'\n\t|__ scriptSig '{}'\n\t|__ sequence '{}'".format(
 			e_count,
 			entry[0],
 			entry[1],

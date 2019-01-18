@@ -49,52 +49,48 @@ class StackMachine:
 		self._stack = []
 
 
+	def push_value(self, value):
+		self._stack.append(value)
+
+
+	def handle_operation(self, op):
+		try:
+			operator = StackMachine.OPERATIONS[op]
+		except KeyError:
+			raise ValueError("Unknown operator: '{}'".format(op))
+
+		try:
+			operand_2 = self._stack.pop()
+			operand_1 = self._stack.pop()
+		except IndexError:
+			raise IndexError("Missing operands for operation '{}'".format(op))
+
+		return operator(operand_1, operand_2)
+
+
 	def push(self, op):
 		try:
-			self._stack.append(StackMachine.OPERATIONS[op])
-		except KeyError:
+			self.push_value(int(op))
+		except ValueError:
 			try:
-				self._stack.append(int(op))
+				self.push_value(float(op))
 			except ValueError:
-				try:
-					self._stack.append(float(op))
-				except ValueError:
-					raise ValueError("Unknown operator: '{}'".format(op))
+				self.push_value(self.handle_operation(op))
 
-
-	def solve(self):
-		while len(self._stack) > 2:
-			operand_1 = self._stack.pop()
-
-			if callable(operand_1):
-				raise ValueError("Missing operand")
-
-			operand_2 = self._stack.pop()
-
-			if callable(operand_2):
-				raise ValueError("Missing operand")
-
-			operator = self._stack.pop()
-
-			if not callable(operator):
-				raise ValueError("Missing operator for ({}, {})".format(operand_1, operand_2))
-
-			self._stack.append(operator(operand_1, operand_2))
-
-		if len(self._stack) == 1:
-			return self._stack.pop()
-
-		raise ValueError("Invalid syntax")
 
 
 def handle_input(inp, machine):
 	inp = inp.split()
 
-	for op in reversed(inp):
+	for op in inp:
+		print(machine._stack)
 		machine.push(op)
 
-	result = machine.solve()
-	print(result)
+	print(machine._stack)
+	stack = machine._stack
+
+	if len(stack) == 1:
+		print("=> {}".format(stack.pop()))
 
 
 def main():

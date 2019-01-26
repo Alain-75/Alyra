@@ -40,6 +40,54 @@ class DataReader:
 
 
 
+class Printable:
+	def __str__(self):
+		return self.formatted(self.str_elements(), '')
+
+
+	@staticmethod
+	def formatted(elements, head):
+		elem_head = ''
+
+		if head:
+			if head[-1] == '|':
+				elem_head = '\n' + head + '_________ '
+			else:
+				elem_head = '\n' + head + '|_________ '
+
+		simple_elements = []
+		composed_elements = []
+
+		for label, value in elements.items():
+			if isinstance(value, list):
+				composed_elements.append((label, value))
+			else:
+				simple_elements.append("{}: {}".format(label, value))
+
+		result = elem_head + ', '.join(simple_elements)
+
+		if composed_elements:
+			for (label, values) in composed_elements[:-1]:
+				label_head = '\n' + head + '\t|_________ '
+				result += label_head + label
+
+				if values:
+					for v in values:
+						result += v.formatted(v.str_elements(), head + '\t|\t|')
+
+			(label, values) = composed_elements[-1]
+			label_head = '\n' + head + '\t|_________ '
+			result += label_head + label
+
+			for v in values[:-1]:
+				result += v.formatted(v.str_elements(), head + '\t\t|')
+
+			result += values[-1].formatted(values[-1].str_elements(), head + '\t\t')
+
+		return result
+
+
+
 class Serialized:
 	@classmethod
 	def from_bytes(cls, byte_array):
@@ -55,7 +103,7 @@ class Serialized:
 
 
 
-class Input(Serialized):
+class Input(Serialized, Printable):
 	ACCEPTED_SEQUENCES = [b'\x00\x00\x00\x00', b'\xff\xff\xff\xff', b'\xfe\xff\xff\xff', b'\xfd\xff\xff\xff']
 	TXID_SIZE = 32
 	VOUT_SIZE = 4
@@ -66,8 +114,12 @@ class Input(Serialized):
 		self._sequence = None
 
 
-	def __str__(self):
-		return "txid: {}, vout: {}, scriptSig: {}".format(self._txid, self._vout, self._scriptsig)
+	def str_elements(self):
+		return {
+				"txid": self._txid
+			,	"vout": self._vout
+			,	"scriptSig": self._scriptsig
+			}
 
 
 	@staticmethod
@@ -92,7 +144,7 @@ class Input(Serialized):
 
 
 
-class Output(Serialized):
+class Output(Serialized, Printable):
 	VALUE_SIZE = 8
 
 
@@ -100,8 +152,11 @@ class Output(Serialized):
 		pass
 
 
-	def __str__(self):
-		return "value: {}, script: {}".format(self._value, self._parsed_script)
+	def str_elements(self):
+		return {
+				"value": self._value
+			,	"script": ', '.join(self._parsed_script)
+			}
 
 
 	@staticmethod
@@ -116,7 +171,7 @@ class Output(Serialized):
 
 
 
-class Witness(Serialized):
+class Witness(Serialized, Printable):
 	VALUE_SIZE = 8
 
 
@@ -124,8 +179,8 @@ class Witness(Serialized):
 		self._stack_elements = []
 
 
-	def __str__(self):
-		return "witness: {}".format(self._stack_elements)
+	def str_elements(self):
+		return { "witness": self._stack_elements }
 
 
 	@staticmethod
@@ -142,7 +197,7 @@ class Witness(Serialized):
 
 
 
-class Transaction(Serialized):
+class Transaction(Serialized, Printable):
 	ACCEPTED_VERSIONS = [b'\x01\x00\x00\x00', b'\x02\x00\x00\x00']
 	VERSION_SIZE = 4
 	FLAG_SIZE = 2
@@ -157,14 +212,13 @@ class Transaction(Serialized):
 		self._witnesses = []
 
 
-	def __str__(self):
-		result = "\t- version: {}, locktime: {}:\n\t- in:\n".format(self._version, self._locktime)
-		for i in self._inputs:
-			result += "\t\t- {}\n".format(i)
-		result += "\t- out:\n"
-		for o in self._outputs:
-			result += "\t\t- {}\n".format(o)
-		return result
+	def str_elements(self):
+		return {
+				"version": self._version
+			,	"locktime": self._locktime
+			,	"vin": self._inputs
+			,	"vout": self._outputs
+			}
 
 
 	@staticmethod
@@ -205,7 +259,7 @@ class Transaction(Serialized):
 
 
 
-class Block(Serialized):
+class Block(Serialized, Printable):
 	VERSION_SIZE = 4
 	PREVIOUS_BLOCK_HASH_SIZE = 32
 	MERKLE_ROOT_SIZE = 32
@@ -218,16 +272,15 @@ class Block(Serialized):
 		self._transactions = []
 
 
-	def __str__(self):
-		result = "version: {}, previous hash: {}, merkle root: {}, time: {}, nonce: {}\n\ttransactions:\n".format(
-				self._version
-			,	self._previous_block_hash
-			,	self._merkle_root
-			,	self._time
-			,	self._nonce
-			)
-		for t in self._transactions:
-			result += "- transaction: {}".format(t)
+	def str_elements(self):
+		return {
+				"version": self._version
+			,	"previous hash": self._previous_block_hash
+			,	"merkle root": self._merkle_root
+			,	"time": self._time
+			,	"nonce": self._nonce
+			,	"tx": self._transactions
+			}
 		return result
 
 
@@ -245,10 +298,6 @@ class Block(Serialized):
 		b._transactions = []
 
 		for i in range(number_of_transactions):
-			try:
-				b._transactions.append(Transaction.from_data_reader(data))
-			except:
-				print(b)
-				raise ValueError("i={}".format(i))
+			b._transactions.append(Transaction.from_data_reader(data))
 
 		return b

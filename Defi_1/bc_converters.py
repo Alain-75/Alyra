@@ -232,7 +232,7 @@ class ScriptStack:
 
 		if data_size:
 			# on pousse des données sur la pile
-			self.push_data(data_size, byte_array[:op])
+			self.push_data(data_size, ByteArrayConverter.to_hex(byte_array[:op]))
 			byte_array = byte_array[op:]
 		else:
 			self.push_operation(op)
@@ -254,17 +254,40 @@ class IntConverter:
 
 class ByteArrayConverter:
 	@staticmethod
+	def to_int(array):
+		return int.from_bytes(array, byteorder='big', signed=False)
+
+
+	@staticmethod
+	def to_hex(array):
+		return hex(ByteArrayConverter.to_int(array))
+
+
+	@staticmethod
 	def parse_varInt(array):
+		size = len(array)
+
+		if not size: raise ValueError("Empty varInt")
+
 		first_byte = array[0]
 
 		if first_byte == 0xfd:
+			if size < 3: raise ValueError("varInt2 too short")
 			return 3, int.from_bytes(array[1:3], byteorder='little', signed=False)
 		elif first_byte == 0xfe:
+			if size < 3: raise ValueError("varInt4 too short")
 			return 5, int.from_bytes(array[1:5], byteorder='little', signed=False)
 		elif first_byte == 0xff:
+			if size < 3: raise ValueError("varInt8 too short")
 			return 9, int.from_bytes(array[1:9], byteorder='little', signed=False)
 
 		return 1, first_byte
+
+
+	@staticmethod
+	def little_endian_to_int(array):
+		array.reverse()
+		return ByteArrayConverter.to_int(array)
 
 
 	@staticmethod
@@ -305,23 +328,13 @@ class StrConverter:
 
 
 	@staticmethod
-	def hex_to_byte_array(string):
-		number = StrConverter.hex_to_int(string)
-		array = number.to_bytes(getsizeof(number), 'big')
-		for i in range(len(array)):
-			if array[i] != 0:
-				return array[i:]
-		return b'\x00'
-
-
-	@staticmethod
 	def hex_reverse_endianness(string):
-		return hex(int.from_bytes(StrConverter.hex_to_byte_array(string), byteorder='little', signed=False))
+		return hex(int.from_bytes(bytearray.fromhex(string), byteorder='little', signed=False))
 
 
 	@staticmethod
 	def parse_varInt(string):
-		return ByteArrayConverter.parse_varInt(StrConverter.hex_to_byte_array(string))
+		return ByteArrayConverter.parse_varInt(bytearray.fromhex(string))
 
 
 	# https://bitcoin.stackexchange.com/questions/2924/how-to-calculate-new-bits-value

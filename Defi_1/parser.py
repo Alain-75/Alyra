@@ -48,7 +48,7 @@ def main():
 			with open(args.file) as file:
 				result = parsed_type.from_hex(file.read(-1))
 		else:
-			result = parsed_type.from_hex(sys.stdin.read(-1))
+			result = parsed_type.from_hex(sys.stdin.readline().strip())
 
 	print(result)
 

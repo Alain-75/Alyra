@@ -39,6 +39,11 @@ class DataReader:
 		return value
 
 
+	def read_variable_length_field(self):
+		length = self.read_varInt()
+		return self.read(length) if length else bytearray(b'')
+
+
 
 class Printable:
 	def __str__(self):
@@ -128,17 +133,14 @@ class Input(Serialized, Printable):
 		inp._txid = BA.to_hex(data.read(inp.TXID_SIZE)) # Le hash de la transaction passée où sont les bitcoins à dépenser (sur 32 octets)
 		inp._vout = BA.little_endian_to_int(data.read(inp.VOUT_SIZE)) # L’index de la sortie (output) de cette transaction concernée (sur 4 octets)
 
-		# Longueur de ScriptSig (varInt)
-		scriptSig_length = data.read_varInt()
-
 		# scriptSig
-		inp._scriptsig = BA.to_hex(data.read(scriptSig_length))
+		inp._scriptsig = BA.to_hex(data.read_variable_length_field())
 
 		# Séquence (sur 4 octets)
 		inp._sequence = data.read(inp.SEQUENCE_SIZE)
 
-		if inp._sequence not in inp.ACCEPTED_SEQUENCES:
-			raise ValueError("Unacceptable sequence {}".format(inp._sequence))
+		#if inp._sequence not in inp.ACCEPTED_SEQUENCES:
+		#	raise ValueError("Unacceptable sequence {}".format(inp._sequence))
 
 		return inp
 
@@ -163,8 +165,7 @@ class Output(Serialized, Printable):
 	def from_data_reader(data):
 		out = Output()
 		out._value = BA.little_endian_to_int(data.read(out.VALUE_SIZE))
-		scriptPubKey_length = data.read_varInt()
-		out._scriptpubkey = data.read(scriptPubKey_length)
+		out._scriptpubkey = data.read_variable_length_field()
 		out._parsed_script = BA.script_to_opcodes(out._scriptpubkey)
 		out._scriptpubkey = BA.to_hex(out._scriptpubkey)
 		return out
@@ -190,8 +191,7 @@ class Witness(Serialized, Printable):
 		wit._stack_elements = []
 
 		for i in range(number_of_stack_elements):
-			element_size = data.read_varInt()
-			wit._stack_elements.append(BA.to_hex(data.read(element_size)))
+			wit._stack_elements.append(BA.to_hex(data.read_variable_length_field()))
 
 		return wit
 

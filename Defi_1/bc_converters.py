@@ -225,15 +225,15 @@ class ScriptStack:
 		push_size = self.is_explicit_push(op)
 
 		if push_size:
-			data_size = int.from_bytes(hex_string[:push_size], byteorder='little', signed=False)
+			data_size = int.from_bytes(byte_array[:push_size], byteorder='little', signed=False)
 			byte_array = byte_array[push_size:]
 		elif self.is_implict_push(op):
 			data_size = op
 
 		if data_size:
 			# on pousse des données sur la pile
-			self.push_data(data_size, ByteArrayConverter.to_hex(byte_array[:op]))
-			byte_array = byte_array[op:]
+			self.push_data(data_size, ByteArrayConverter.to_hex(byte_array[:data_size]))
+			byte_array = byte_array[data_size:]
 		else:
 			self.push_operation(op)
 

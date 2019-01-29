@@ -24,6 +24,8 @@ contract Crew
 
   function delete_address_from_array(address[] storage array, uint index) internal
   {
+    delete array[index];
+
     for(uint i = index; i < array.length-1; ++i)
     {
       array[i] = array[i+1];
@@ -174,5 +176,17 @@ contract Crew
     require(t.initialized, "Proposal does not exist.");
     require(t.closed, "Vote is not closed yet.");
     return tally(proposals[proposal]);
+  }
+
+  function cancel_proposal(string memory proposal) public
+  {
+    VoteTally storage t = proposals[proposal];
+    require(owner == msg.sender, "Only owner can cancel a proposal.");
+    require(t.initialized, "Proposal does not exist.");
+    require(t.closed == false, "Vote is closed.");
+
+    t.initialized = false;
+    delete t.votes_for;
+    delete t.votes_against;
   }
 }

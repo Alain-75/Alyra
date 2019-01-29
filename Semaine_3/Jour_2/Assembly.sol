@@ -3,6 +3,7 @@ pragma solidity ^0.4.25;
 
 contract Crew
 {
+  uint constant VOTE_DELAY_SECONDS = 60*60*24*7; // vote stays open for a week at most
   address owner;
   string name;
   address[] members;
@@ -16,13 +17,19 @@ contract Crew
 
   struct VoteTally
   {
+    uint start_time;
     address[] votes_for;
     address[] votes_against;
     bool initialized;
     bool closed;
   }
 
-  function delete_address_from_array(address[] storage array, uint index) internal
+  function __is_closed(VoteTally storage t) internal view returns (bool)
+  {
+    return t.closed || __total(t) == members.length || now - t.start_time > VOTE_DELAY_SECONDS;
+  }
+
+  function __delete_address_from_array(address[] storage array, uint index) internal
   {
     delete array[index];
 
@@ -36,13 +43,13 @@ contract Crew
   {
     VoteTally storage t = proposals[proposal];
     require(t.initialized, "Proposal does not exist.");
-    require(t.closed == false, "Vote is closed.");
+    require(__is_closed(t) == false, "Vote is closed.");
 
     for (uint i = 0; i < t.votes_for.length; ++i)
     {
       if (t.votes_for[i] == msg.sender)
       {
-        delete_address_from_array(t.votes_for, i);
+        __delete_address_from_array(t.votes_for, i);
         break;
       }
     }
@@ -51,16 +58,14 @@ contract Crew
     {
       if (t.votes_against[i] == msg.sender)
       {
-        delete_address_from_array(t.votes_against, i);
+        __delete_address_from_array(t.votes_against, i);
         break;
       }
     }
   }
 
-  function has_voted(string memory proposal) public constant returns(bool)
+  function __has_voted(VoteTally storage t) internal constant returns(bool)
   {
-    VoteTally storage t = proposals[proposal];
-
     for (uint i = 0; i < t.votes_for.length; i++)
     {
       if (t.votes_for[i] == msg.sender)
@@ -80,28 +85,28 @@ contract Crew
     return false;
   }
 
-  function vote_for(string memory proposal) internal
+  function __vote_for(VoteTally storage t) internal
   {
-    if (has_voted(proposal) == false)
+    if (__has_voted(t) == false)
     {
-      proposals[proposal].votes_for.push(msg.sender);
+      t.votes_for.push(msg.sender);
     }
   }
 
-  function vote_against(string memory proposal) internal
+  function __vote_against(VoteTally storage t) internal
   {
-    if(has_voted(proposal) == false)
+    if(__has_voted(t) == false)
     {
-      proposals[proposal].votes_against.push(msg.sender);
+      t.votes_against.push(msg.sender);
     }
   }
 
-  function total(VoteTally t) internal pure returns (uint)
+  function __total(VoteTally storage t) internal view returns (uint)
   {
     return t.votes_for.length + t.votes_against.length;
   }
 
-  function tally(VoteTally t) internal pure returns (bool)
+  function __tally(VoteTally storage t) internal view returns (bool)
   {
     return t.votes_for.length > t.votes_against.length;
   }
@@ -134,31 +139,38 @@ contract Crew
 
   function vote(string memory proposal, bool for_or_against) public
   {
+    VoteTally storage t = proposals[proposal];
+
     require(is_crew(msg.sender), "Sender not allowed to vote.");
-    require(proposals[proposal].initialized, "Proposal does not exist.");
-    require(proposals[proposal].closed == false, "Vote is closed.");
+    require(t.initialized, "Proposal does not exist.");
+    require(__is_closed(t) == false, "Vote is closed.");
 
     if (for_or_against)
     {
-      vote_for(proposal);
+      __vote_for(t);
     }
     else
     {
-      vote_against(proposal);
+      __vote_against(t);
     }
+  }
+
+  function has_voted(string memory proposal) internal constant returns(bool)
+  {
+    return __has_voted(proposals[proposal]);
   }
 
   function has_quorum(string memory proposal) public constant returns (bool)
   {
     require(proposals[proposal].initialized, "Proposal does not exist.");
-    return total(proposals[proposal]) > 2*members.length/3;
+    return __total(proposals[proposal]) > 2*members.length/3;
   }
 
   function is_closed(string memory proposal) public constant returns (bool)
   {
     VoteTally storage t = proposals[proposal];
     require(t.initialized, "Proposal does not exist.");
-    return t.closed || total(t) == members.length;
+    return __is_closed(t);
   }
 
   function close_vote(string memory proposal) public
@@ -174,8 +186,8 @@ contract Crew
   {
     VoteTally storage t = proposals[proposal];
     require(t.initialized, "Proposal does not exist.");
-    require(t.closed, "Vote is not closed yet.");
-    return tally(proposals[proposal]);
+    require(__is_closed(t), "Vote is not closed yet.");
+    return __tally(proposals[proposal]);
   }
 
   function cancel_proposal(string memory proposal) public
@@ -183,7 +195,7 @@ contract Crew
     VoteTally storage t = proposals[proposal];
     require(owner == msg.sender, "Only owner can cancel a proposal.");
     require(t.initialized, "Proposal does not exist.");
-    require(t.closed == false, "Vote is closed.");
+    require(__is_closed(t) == false, "Vote is closed.");
 
     t.initialized = false;
     delete t.votes_for;

@@ -4,15 +4,27 @@ pragma solidity ^0.4.25;
 contract Crew
 {
   uint constant VOTE_DELAY_SECONDS = 60*60*24*7; // vote stays open for a week at most
-  address owner;
+  address king;
   string name;
   address[] members;
   mapping(string => VoteTally) proposals;
 
+  modifier only_king
+  {
+    require(king == msg.sender, "Only contract king can run this query.");
+    _;
+  }
+
+  modifier only_crew
+  {
+    require(is_crew(msg.sender), "Only a crew member can run this query.");
+    _;
+  }
+
   constructor(string memory crew_name) public
   {
     name = crew_name;
-    owner = msg.sender;
+    king = msg.sender;
   }
 
   struct VoteTally
@@ -106,22 +118,20 @@ contract Crew
     return false;
   }
 
-  function submit_proposal(string memory proposal) public
+  function submit_proposal(string memory proposal) public only_crew
   {
     VoteTally storage t = proposals[proposal];
 
-    require(is_crew(msg.sender), "Sender not allowed to submit proposals.");
     require(t.initialized == false, "Proposal does not exist.");
   
     t.initialized = true;
     t.start_time = now;
   }
 
-  function vote(string memory proposal, bool for_or_against) public
+  function vote(string memory proposal, bool for_or_against) public only_crew
   {
     VoteTally storage t = proposals[proposal];
 
-    require(is_crew(msg.sender), "Sender not allowed to vote.");
     require(t.initialized, "Proposal does not exist.");
     require(__is_closed(t) == false, "Vote is closed.");
 
@@ -157,10 +167,9 @@ contract Crew
     return __is_closed(t);
   }
 
-  function close_vote(string memory proposal) public
+  function close_vote(string memory proposal) public only_king
   {
     VoteTally storage t = proposals[proposal];
-    require(owner == msg.sender, "Only owner can close a vote.");
     require(t.initialized, "Proposal does not exist.");
     require(has_quorum(proposal), "Cannot close vote before reaching quorum.");
     t.closed = true;
@@ -177,7 +186,6 @@ contract Crew
   function cancel_proposal(string memory proposal) public
   {
     VoteTally storage t = proposals[proposal];
-    require(owner == msg.sender, "Only owner can cancel a proposal.");
     require(t.initialized, "Proposal does not exist.");
     require(__is_closed(t) == false, "Vote is closed.");
 

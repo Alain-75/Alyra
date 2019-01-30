@@ -32,11 +32,21 @@ contract SceneLibre
 
 	function artiste_courant() public view returns(string nom_artiste)
 	{
-		return _passage_artistes[_artiste_courant];
+		if (_artiste_courant < MAX_CRENEAUX - _nb_creneaux_libres)
+		{
+			return _passage_artistes[_artiste_courant];
+		}
+		else
+		{
+			return "FIN";
+		}
 	}
 
 	function passer_prochain_artiste() public
 	{
-		_artiste_courant += 1;
+		if (_artiste_courant < MAX_CRENEAUX - _nb_creneaux_libres)
+		{
+			_artiste_courant += 1;
+		}
 	}
 }

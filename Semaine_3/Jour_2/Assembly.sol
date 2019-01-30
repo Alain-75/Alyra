@@ -1,17 +1,16 @@
-//Write your own contracts here. Currently compiles using solc v0.4.15+commit.bbb8e64f.
 pragma solidity ^0.4.25;
 
 contract Crew
 {
   uint constant VOTE_DELAY_SECONDS = 60*60*24*7; // vote stays open for a week at most
-  address king;
   string name;
+  address[] made_men;
   address[] members;
   mapping(string => VoteTally) proposals;
 
-  modifier only_king
+  modifier only_made_men
   {
-    require(king == msg.sender, "Only contract king can run this query.");
+    require(is_made_man(msg.sender), "Only a made man can run this query.");
     _;
   }
 
@@ -24,7 +23,32 @@ contract Crew
   constructor(string memory crew_name) public
   {
     name = crew_name;
-    king = msg.sender;
+    made_men.push(msg.sender);
+  }
+
+  function is_made_man(address guy) public constant returns (bool)
+  {
+    for (uint i = 0; i < made_men.length; i++)
+    {
+      if (made_men[i] == guy)
+      {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function add_made_man(address guy_address) public only_made_men
+  {
+    require(false == is_made_man(guy_address), "Already a made man.");
+    made_men.push(guy_address);
+  }
+
+  function blood_out() public only_made_men
+  {
+    require(made_men.length > 1, "We need at least one made man to lead the crew");
+    __delete_sender_from_array(made_men);
   }
 
   struct VoteTally
@@ -167,7 +191,7 @@ contract Crew
     return __is_closed(t);
   }
 
-  function close_vote(string memory proposal) public only_king
+  function close_vote(string memory proposal) public only_made_men
   {
     VoteTally storage t = proposals[proposal];
     require(t.initialized, "Proposal does not exist.");
@@ -183,7 +207,7 @@ contract Crew
     return __tally(proposals[proposal]);
   }
 
-  function cancel_proposal(string memory proposal) public
+  function cancel_proposal(string memory proposal) public only_made_men
   {
     VoteTally storage t = proposals[proposal];
     require(t.initialized, "Proposal does not exist.");

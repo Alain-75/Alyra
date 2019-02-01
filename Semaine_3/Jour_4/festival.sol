@@ -300,42 +300,52 @@ contract Hellfest is SharedVenture
 
 	function buy_lottery_ticket(uint festival_day, uint8 ticket_number) public payable verify_sender_is_metalhead()
 	{
-		// festival_day must be between 1 and (_festival_end - _festival_start) / 1 days included
-		// (_festival_end - _festival_start) has already been checked for underflows.
-		require(
-				festival_day > 0
-			&&	((festival_day - 1).mul(1 days)) <= (_festival_end - _festival_start)
-			,	"Lottery tickets are available only on festival days."
-			);
-
+		require(_validate_festival_day(festival_day), "Lottery tickets are available only on festival days.");
 		require(msg.value >= LOTTERY_TICKET_PRICE, "Not paying enough for a lottery ticket.");
-		require(_lottery_tickets[msg.sender][festival_day] == 0,
+		require(_lottery_tickets[msg.sender][festival_day] == INVALID_LOTTERY_NUMBER,
 			"You already have a ticket for lottery on that day.");
-		require(ticket_number != 0, "Your ticket number cannot be 0");
+		require(ticket_number != INVALID_LOTTERY_NUMBER, "Your ticket number cannot be 0");
 
 		_lottery_tickets[msg.sender][festival_day] = ticket_number;
 	}
 
-	function has_won_lottery(uint festival_day) public view verify_sender_is_metalhead returns(bool has_won)
+	function has_won_lottery(uint festival_day) public verify_sender_is_metalhead returns(bool has_won)
 	{
+		require(_validate_festival_day(festival_day), "Lottery tickets are available only on festival days.");
+		require(now >= _festival_start + (festival_day - 1).mul(1 days), "Lottery results not available yet, be patient!");
+
+		if (_lottery_results[festival_day] == INVALID_LOTTERY_NUMBER)
+		{
+			_lottery_results[festival_day] = _generate_lottery_ticket();
+		}
+
 		return _lottery_results[festival_day] == _lottery_tickets[msg.sender][festival_day];
 	}
 
 	function recover_lottery_gain(uint festival_day) public verify_sender_is_metalhead
 	{
-		require(has_won_lottery(festival_day), "You have not won on that day, or already got your gain.");
+		// has_won_lottery verifies festival_day parameter
+		require(has_won_lottery(festival_day), "You have not won on that day, or already recovered your gain.");
 		require(
 				((festival_day - 1).mul(1 days)).add(_festival_start).add(LOTTERY_RECOVER_DELAY) > now
 			,	"You have to wait a little more to recover your gain."
 			);
 
-		_lottery_tickets[msg.sender][festival_day] = 0;
+		_lottery_tickets[msg.sender][festival_day] = INVALID_LOTTERY_NUMBER;
 		msg.sender.transfer(LOTTERY_GAIN);
 	}
 
 	/*
 	 * ~~~~~~~~~~~~~~~~ INTERNAL METHODS
 	 */
+
+	function _validate_festival_day(uint festival_day) internal view returns(bool)
+	{
+		// festival_day must be between 1 and (_festival_end - _festival_start) / (1 days) included
+		// (_festival_end - _festival_start) has already been checked for underflows.
+		return festival_day > 0
+			&&	((festival_day - 1).mul(1 days)) <= (_festival_end - _festival_start);
+	}
 
 	function _is_metalhead(address someone) internal view returns(bool)
 	{
@@ -346,7 +356,7 @@ contract Hellfest is SharedVenture
 	{
 		uint seed = uint(blockhash(block.number-1));
 
-		while (uint8(seed) == 0)
+		while (uint8(seed) == INVALID_LOTTERY_NUMBER)
 		{
 			seed *= 6767665691983247; // here, we don't care about overflow
 			seed = uint(keccak256(abi.encodePacked(seed)));
@@ -362,6 +372,7 @@ contract Hellfest is SharedVenture
 	uint constant LOTTERY_TICKET_PRICE = 100 finney;
 	uint constant LOTTERY_GAIN = 1 ether; // metalheads are too drunk to understand probability
 	uint constant LOTTERY_RECOVER_DELAY = 2 days;
+	uint8 constant INVALID_LOTTERY_NUMBER = 0;
 
 	uint public _nb_tickets;
 	uint public _ticket_cost;

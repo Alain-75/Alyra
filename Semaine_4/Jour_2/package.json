@@ -1,0 +1,14 @@
+{
+  "name": "al_ira",
+  "version": "0.0.0",
+  "description": "formation",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "live-server": "^1.2.1"
+  }
+}

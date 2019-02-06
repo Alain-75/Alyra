@@ -6,5 +6,25 @@
 	</head>
 	<body>
 		<h1>Hello world</h1>
+		<button onclick="connect_to_metamask()">Test connection</button>
+		<hr/>
+		<button onclick="join()">Join</button>
+		<button onclick="get_start_coins()">Start coins?</button>
+		<hr/>
+		Amount: <input type="text" name="amount" id="amount_id" /><br />
+		Recipient: <input type="text" name="recipient" id="recipient_id" /><br />
+		<button onclick="send_tokens()">Send</button>
+		<hr/>
+		<button onclick="heartbeat()">Heartbeat</button>
+
+		<!-- This exposes the library as a global variable: ethers -->
+		<script
+			src="https://cdn.ethers.io/scripts/ethers-v4.min.js"
+			charset="utf-8"
+			type="text/javascript"></script>
+		<script
+			src="index.js"
+			charset="utf-8"
+			type="text/javascript"></script>
 	</body>
 </html>

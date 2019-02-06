@@ -12,7 +12,7 @@ contract Credibility
 
 	function produce_hash(string memory homework) public pure returns(bytes32 homework_hash)
 	{
-		return keccak256(homework);
+		return keccak256(abi.encodePacked(homework));
 	}
 
 	function transfer(address recipient, uint256 credibility) public
@@ -25,7 +25,7 @@ contract Credibility
 		_cred[recipient] = _cred[recipient].add(credibility);
 	}
 
-	function turn_in(bytes32 homework_hash) public returns(uint8 position)
+	function turn_in(bytes32 homework_hash) public returns(uint position)
 	{
 		require(_cred[msg.sender] == 0, "Already turned in your homework.");
 		uint nb_already_turned_in = _homeworks.length;

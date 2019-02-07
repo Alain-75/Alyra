@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 	<head>
-		<meta charset="UTF-8" />
 		<meta name="description" content="Alyra Exercices 4.2.X" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Alyra Exercices 4.2.X</title>
 	</head>
 	<body>
-		<button id="connect" onclick="establish_dapp_connection()">Connect Dapp through Metamask</button>
+		<div><button id="connect" onclick="establish_dapp_connection()">Connect Dapp through Metamask</button></div>
 		<div id="network_info">
 			<h1 id="network">Not connected</h1>
 			<p><span id="block_number_label">Last block:</span>&nbsp;<span id="block_number"></span></p>
@@ -26,7 +25,7 @@
 				<span id="homework_url_label">Homework URL:</span>
 				<input type="text" id="homework_url" />
 				<button onclick="get_homework_hash()">Generate hash</button>
-			<p>
+			</p>
 			<p><span id="hash_label">Hash:</span>&nbsp;<span id="hash"></span></p>
 			<p><button id="submit_homework" onclick="submit_homework()" disabled="disabled" >Submit hash</button></p>
 			<p><span id="tx_label">Submit transaction:</span>&nbsp;<span id="tx"></span></p>

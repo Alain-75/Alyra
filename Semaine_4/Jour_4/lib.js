@@ -21,35 +21,41 @@ async function establish_dapp_connection()
 	}
 }
 
-let network = null;
-let block_number = 0;
-let gas_price = 0;
-let balance = 0;
-let nb_tx = 0;
-
-async function get_chain_info()
+async function update_page_content()
 {
 	const address = dapp.address;
 	const provider = dapp.provider;
 
-	[block_number, network, gas_price, balance, nb_tx] = await Promise.all([
-			provider.getBlockNumber(),
-			provider.getNetwork(),
-			provider.getGasPrice(),
-			provider.getBalance(address),
-			provider.getTransactionCount(address),
-		]);
-}
+	document.getElementById('account').innerHTML = address;
 
-function update_info_view()
-{
-	if (network !== null)
-	{
-		document.getElementById('network').innerHTML = network.name;
-		document.getElementById('block_number').innerHTML = block_number;
-		document.getElementById('gas_price').innerHTML = gas_price.toString();
-		document.getElementById('account').innerHTML = dapp.address;
-		document.getElementById('balance').innerHTML = balance;
-		document.getElementById('nb_tx').innerHTML = nb_tx.toString();
-	}
+	provider.getNetwork().then((network) =>
+		{
+			document.getElementById('network').innerHTML = network.name;
+		}
+	);
+
+	provider.getBlockNumber().then((block_number) =>
+		{
+			document.getElementById('block_number').innerHTML = block_number;
+		}
+	);
+
+	provider.getGasPrice().then((gas_price) =>
+		{
+			document.getElementById('gas_price').innerHTML = gas_price.toString();
+		}
+	);
+
+	provider.getBalance(address).then((balance) =>
+		{
+			document.getElementById('balance').innerHTML = balance;
+		}
+	);
+
+	provider.getTransactionCount(address).then((nb_tx) =>
+		{
+			document.getElementById('nb_tx').innerHTML = nb_tx.toString();
+		}
+	);
+
 }

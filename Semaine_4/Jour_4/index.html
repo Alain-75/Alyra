@@ -8,6 +8,21 @@
 		<title>Alyra Exercices 4.2.X</title>
 	</head>
 	<body>
-		<script src="https://cdn.ethers.io/scripts/ethers-v4.min.js" charset="utf-8" type="text/javascript" />
+		<button id="connect" onclick="establish_dapp_connection()">Connect Dapp through Metamask</button>
+		<div id="network_info">
+			<h1 id="network">Not connected</h1>
+			<p><span id="block_number_label">Last block:</span><span id="block_number"></span></p>
+			<p><span id="gas_price_label">Current gas price:</span><span id="gas_price"></span></p>
+		</div>
+		<div id="account_info">
+			<h1 id="account">Not connected</h1>
+			<p><span id="balance_label">Balance:</span><span id="balance"></span></p>
+			<p><span id="nb_tx_label">Transactions:</span><span id="nb_tx"></span></p>
+		</div>
+		<script src="https://cdn.ethers.io/scripts/ethers-v4.min.js" charset="utf-8" type="text/javascript"></script>
+		<script src="lib.js" charset="utf-8" type="text/javascript"></script>
+		<script charset="utf-8" type="text/javascript">
+			window.setInterval(function(){if(dapp_is_on()){get_chain_info(); update_info_view();}}, 500);
+		</script>
 	</body>
 </html>

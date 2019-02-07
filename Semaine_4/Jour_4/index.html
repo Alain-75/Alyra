@@ -11,13 +11,25 @@
 		<button id="connect" onclick="establish_dapp_connection()">Connect Dapp through Metamask</button>
 		<div id="network_info">
 			<h1 id="network">Not connected</h1>
-			<p><span id="block_number_label">Last block:</span><span id="block_number"></span></p>
-			<p><span id="gas_price_label">Current gas price:</span><span id="gas_price"></span></p>
+			<p><span id="block_number_label">Last block:</span>&nbsp;<span id="block_number"></span></p>
+			<p><span id="gas_price_label">Current gas price:</span>&nbsp;<span id="gas_price"></span></p>
 		</div>
 		<div id="account_info">
 			<h1 id="account">Not connected</h1>
-			<p><span id="balance_label">Balance:</span><span id="balance"></span></p>
-			<p><span id="nb_tx_label">Transactions:</span><span id="nb_tx"></span></p>
+			<p><span id="balance_label">Balance:</span>&nbsp;<span id="balance"></span></p>
+			<p><span id="nb_tx_label">Transactions:</span>&nbsp;<span id="nb_tx"></span></p>
+		</div>
+		<div id="contract_info">
+			<h1 id="contract">Not connected</h1>
+			<p><span id="credibility_label">Credibility:</span>&nbsp;<span id="credibility"></span></p>
+			<p>
+				<span id="homework_url_label">Homework URL:</span>
+				<input type="text" id="homework_url" />
+				<button onclick="get_homework_hash()">Generate hash</button>
+			<p>
+			<p><span id="hash_label">Hash:</span>&nbsp;<span id="hash"></span></p>
+			<p><button id="submit_homework" onclick="submit_homework()" disabled="disabled" >Submit hash</button></p>
+			<p><span id="tx_label">Submit transaction:</span>&nbsp;<span id="tx"></span></p>
 		</div>
 		<script src="https://cdn.ethers.io/scripts/ethers-v4.min.js" charset="utf-8" type="text/javascript"></script>
 		<script src="lib.js" charset="utf-8" type="text/javascript"></script>

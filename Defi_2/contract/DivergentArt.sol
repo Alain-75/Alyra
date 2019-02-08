@@ -1,4 +1,5 @@
 pragma solidity ^0.5.3;
+pragma experimental ABIEncoderV2;
 
 import "github.com/OpenZeppelin/openzeppelin-solidity/contracts/math/SafeMath.sol";
 
@@ -49,6 +50,12 @@ contract DivergentArt
 	uint constant private NO_REPUTATION = 0;
 	uint constant public MINIMUM_JOB_PAY = 100 wei;
 
+	event JobSubmitted(string title, address issuer, bytes32 job_hash);
+	event JobCandidated(string name, address candidate, bytes32 job_hash);
+	event JobHire(address hire, bytes32 job_hash);
+	event JobResigned(bytes32 job_hash);
+	event JobFinished(string delivery_url, bytes32 job_hash);
+
 	function _job_index(Job[] memory array, bytes32 job_hash) internal pure returns(uint index_or_not)
 	{
 		for (uint i = 0; i < array.length; ++i)
@@ -60,6 +67,13 @@ contract DivergentArt
 		}
 
 		return JOB_INDEX_NOT_FOUND;
+	}
+
+	function _find_job(Job[] storage array, bytes32 job_hash) internal view returns(Job storage)
+	{
+		uint index = _job_index(array, job_hash);
+		require(index != JOB_INDEX_NOT_FOUND, "Unknown job");
+		return array[index];
 	}
 
 	function _remove_job_at_index(Job[] storage array, uint index) internal
@@ -101,10 +115,27 @@ contract DivergentArt
 		return false;
 	}
 
-	event JobCandidated(string indexed name, address candidate, bytes32 job_hash);
-	event JobHire(address hire, bytes32 job_hash);
-	event JobResigned(bytes32 job_hash);
-	event JobFinished(string indexed delivery_url, bytes32 job_hash);
+	function _has_candidated_for_job(address artist, Job memory job) internal pure returns(bool)
+	{
+		for (uint i = 0; i < job._candidates.length; ++i)
+		{
+			if(artist == job._candidates[i])
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	function _blame_artist(Job memory job, bool apply_blame) internal
+	{
+		if ( apply_blame && false == job._blame_issued && (job._delivery_time - job._take_time) > job._delay_seconds )
+		{
+			Artist storage artist = _artists[job._taker];
+			artist._reputation = _change_reputation(artist._reputation, -1);
+			job._blame_issued = true;
+		}
+	}
 
 	modifier not_blacklisted()
 	{
@@ -146,6 +177,21 @@ contract DivergentArt
 		}
 	}
 
+	function waiting_job(bytes32 job_hash) public view returns(Job memory)
+	{
+		return _find_job(_waiting_jobs, job_hash);
+	}
+
+	function ongoing_job(bytes32 job_hash) public view returns(Job memory)
+	{
+		return _find_job(_ongoing_jobs, job_hash);
+	}
+
+	function finished_job(bytes32 job_hash) public view returns(Job memory)
+	{
+		return _find_job(_finished_jobs, job_hash);
+	}
+
 	function submit_job(
 			string memory title
 		,	string memory description
@@ -177,9 +223,10 @@ contract DivergentArt
 		job._blame_issued = false;
 
 		_waiting_jobs.push(job);
+		emit JobSubmitted(job._title, job._issuer, job._hash);
 	}
 
-	function cancel_job(bytes32 job_hash) public payable registered_client
+	function cancel_job(bytes32 job_hash) public registered_client
 	{
 		uint index = _job_index(_waiting_jobs, job_hash);
 		require(index != JOB_INDEX_NOT_FOUND, "Unknown job");
@@ -196,18 +243,6 @@ contract DivergentArt
 		require(artist._reputation >= job._required_reputation, "Not reputed enough");
 		job._candidates.push(msg.sender);
 		emit JobCandidated(artist._name, msg.sender, job_hash);
-	}
-
-	function _has_candidated_for_job(address artist, Job memory job) internal pure returns(bool)
-	{
-		for (uint i = 0; i < job._candidates.length; ++i)
-		{
-			if(artist == job._candidates[i])
-			{
-				return true;
-			}
-		}
-		return false;
 	}
 
 	function hire(bytes32 job_hash, address artist) public registered_client
@@ -261,21 +296,11 @@ contract DivergentArt
 		emit JobFinished(delivery_url, job_hash);
 	}
 
-	function _blame_artist(Job memory job, bool apply_blame) internal
-	{
-		if ( apply_blame && false == job._blame_issued && (job._delivery_time - job._take_time) > job._delay_seconds )
-		{
-			Artist storage artist = _artists[job._taker];
-			artist._reputation = _change_reputation(artist._reputation, -1);
-			job._blame_issued = true;
-		}
-	}
-
 	function close_job(bytes32 job_hash, bool apply_blame) public registered_client
 	{
 		uint index = _job_index(_finished_jobs, job_hash);
 		require(index != JOB_INDEX_NOT_FOUND, "Unknown job");
-		require(_waiting_jobs[index]._issuer == msg.sender, "You are not the issuer");
+		require(_finished_jobs[index]._issuer == msg.sender, "You are not the issuer");
 		_blame_artist(_finished_jobs[index], apply_blame);
 		_remove_job_at_index(_finished_jobs, index);
 	}
@@ -284,7 +309,7 @@ contract DivergentArt
 	{
 		uint index = _job_index(_finished_jobs, job_hash);
 		require(index != JOB_INDEX_NOT_FOUND, "Unknown job");
-		require(_waiting_jobs[index]._issuer == msg.sender, "You are not the issuer");
+		require(_finished_jobs[index]._issuer == msg.sender, "You are not the issuer");
 
 		_waiting_jobs.push(_finished_jobs[index]);
 		_remove_job_at_index(_finished_jobs, index);
@@ -296,5 +321,6 @@ contract DivergentArt
 		job._delivery_time = 0;
 		job._blame_issued = false;
 		job._delivery_url_hash = bytes32(0);
+		emit JobSubmitted(job._title, job._issuer, job._hash);
 	}
 }

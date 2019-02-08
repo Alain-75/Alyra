@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+		<meta name="description" content="Alyra Défi #2" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Divergent is so totally, like, not Deviant</title>
+	</head>
+	<body>
+		<div class="header">
+			<h1>Client</h1>
+		</div>
+		<div class="submit_form">
+			<h2>Submit a new job</h2>
+			<p>
+				<span id="job_pay_label">Pay (including 2% fee):</span>
+				<input type="text" id="job_pay" />
+			</p>
+			<p>
+				<span id="reputation_label">Required reputation:</span>
+				<input type="number" value="1" min="1" step="1" id="job_reputation" />
+			</p>
+			<p>
+				<span id="reputation_label">Time (in hours):</span>
+				<input type="number" value="1" min="1" step="1" id="job_time" />
+			</p>
+			<p><span id="job_title_label">Title:</span>&nbsp;<input type="text" id="job_title" /></p>
+			<p><textarea id="job_desciption" /></p>
+			<button onclick="submit_job()">Submit job</button>
+			<p id="job_submit_result" />
+		</div>
+		<script src="https://cdn.ethers.io/scripts/ethers-v4.min.js" charset="utf-8" type="text/javascript"></script>
+		<script src="lib.js" charset="utf-8" type="text/javascript"></script>
+		<script charset="utf-8" type="text/javascript">register_as_client();</script>
+	</body>
+</html>

@@ -9,9 +9,17 @@ contract DivergentArt
 
 	address payable _owner;
 	constructor() public { _owner = msg.sender; }
+	function () payable external { _owner.transfer(msg.value); }
 
 	struct Entity
 	{
+		string _name;
+		uint _reputation;
+	}
+
+	struct AddressedEntity
+	{
+		address _address;
 		string _name;
 		uint _reputation;
 	}
@@ -83,6 +91,8 @@ contract DivergentArt
 		{
 			_jobs[i] = _jobs[i + 1];
 		}
+
+		_jobs.length -= 1;
 	}
 
 	function _change_reputation(uint reputation, int change) internal pure returns(uint new_reputation)
@@ -185,6 +195,21 @@ contract DivergentArt
 		return _find_job(job_hash);
 	}
 
+	function nb_candidates(bytes32 job_hash) public view returns(uint nb)
+	{
+		return _find_job(job_hash)._candidates.length;
+	}
+
+	function job_candidate(bytes32 job_hash, uint index) public view returns(AddressedEntity memory candidate)
+	{
+		AddressedEntity memory cand;
+		cand._address = _find_job(job_hash)._candidates[index];
+		Entity memory artist = _artists[cand._address];
+		cand._name = artist._name;
+		cand._reputation = artist._reputation;
+		return cand;
+	}
+
 	function submit_job(
 			string memory title
 		,	string memory description
@@ -216,6 +241,7 @@ contract DivergentArt
 		job._status = Status.WAITING;
 
 		_jobs.push(job);
+		_owner.transfer(fee);
 		emit JobSubmitted(job._title, job._issuer, job._hash);
 	}
 
@@ -227,6 +253,7 @@ contract DivergentArt
 		require(job._status == Status.WAITING, "Cannot cancel");
 		require(job._issuer == msg.sender, "Not your job");
 		_remove_job_at_index(index);
+		msg.sender.transfer(job._pay); // refund pay but not fees
 	}
 
 	function candidate_for_job(bytes32 job_hash) public registered_artist

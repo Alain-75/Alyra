@@ -1,0 +1,56 @@
+h2
+{
+	text-align: center;
+}
+
+.column
+{
+	min-width: 20%;
+	margin: 1em;
+	float: left;
+}
+
+.job
+{
+	margin: 0.1em;
+	padding: 5px;
+}
+
+#submit_form {
+	margin: 1em;
+	display: none;
+}
+
+#register_form {
+	display: none;
+}
+
+#waiting_jobs
+{
+	margin: 0.5em;
+}
+
+#waiting_jobs>.job
+{
+	background-color: #EEAAAA;
+}
+
+#ongoing_jobs
+{
+	margin: 0.5em;
+}
+
+#ongoing_jobs>.job
+{
+	background-color: #EEBBAA;
+}
+
+#finished_jobs
+{
+	margin: 0.5em;
+}
+
+#finished_jobs>.job
+{
+	background-color: #AAEEAA;
+}

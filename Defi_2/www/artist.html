@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+		<meta name="description" content="Alyra Défi #2" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Divergent is so totally, like, not Deviant</title>
+		<link rel="stylesheet" type="text/css" href="style.css" />
+	</head>
+	<body>
+		<div class="header">
+			<h1>Artist</h1>
+		</div>
+		<div id="register_form">
+			<p>You first need to register on Divergent!</p>
+			<p>
+				<span id="artist_name_label">Give us an alias:</span>
+				<input type="text" id="artist_name" />
+				<button onclick="register_as_artist()">Register</button>
+			</p>
+		</div>
+		<div class="column"><h2>Waiting</h2><div id="waiting_jobs"></div></div>
+		<div class="column"><h2>Ongoing</h2><div id="ongoing_jobs"></div></div>
+		<div class="column"><h2>Finished</h2><div id="finished_jobs"></div></div>
+		<script
+			src="https://cdn.ethers.io/scripts/ethers-v4.min.js"
+			charset="utf-8"
+			type="text/javascript"></script>
+		<script src="lib.js" charset="utf-8" type="text/javascript"></script>
+		<script charset="utf-8" type="text/javascript">update_artist_view();</script>
+	</body>
+</html>

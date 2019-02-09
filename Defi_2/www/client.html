@@ -5,12 +5,21 @@
 		<meta name="description" content="Alyra Défi #2" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Divergent is so totally, like, not Deviant</title>
+		<link rel="stylesheet" type="text/css" href="style.css" />
 	</head>
 	<body>
 		<div class="header">
 			<h1>Client</h1>
 		</div>
-		<div class="submit_form">
+		<div id="register_form">
+			<p>You first need to register on Divergent!</p>
+			<p>
+				<span id="client_name_label">Give us an alias:</span>
+				<input type="text" id="client_name" />
+				<button onclick="register_as_client()">Register</button>
+			</p>
+		</div>
+		<div id="submit_form" class="column">
 			<h2>Submit a new job</h2>
 			<p>
 				<span id="job_pay_label">Pay (including 2% fee):</span>
@@ -21,16 +30,22 @@
 				<input type="number" value="1" min="1" step="1" id="job_reputation" />
 			</p>
 			<p>
-				<span id="reputation_label">Time (in hours):</span>
+				<span id="time_label">Time (in hours):</span>
 				<input type="number" value="1" min="1" step="1" id="job_time" />
 			</p>
 			<p><span id="job_title_label">Title:</span>&nbsp;<input type="text" id="job_title" /></p>
-			<p><textarea id="job_desciption" /></p>
+			<p><textarea id="job_desciption" rows="10" columns="20"></textarea></p>
 			<button onclick="submit_job()">Submit job</button>
 			<p id="job_submit_result" />
 		</div>
-		<script src="https://cdn.ethers.io/scripts/ethers-v4.min.js" charset="utf-8" type="text/javascript"></script>
+		<div class="column"><h2>Waiting</h2><div id="waiting_jobs"></div></div>
+		<div class="column"><h2>Ongoing</h2><div id="ongoing_jobs"></div></div>
+		<div class="column"><h2>Finished</h2><div id="finished_jobs"></div></div>
+		<script
+			src="https://cdn.ethers.io/scripts/ethers-v4.min.js"
+			charset="utf-8"
+			type="text/javascript"></script>
 		<script src="lib.js" charset="utf-8" type="text/javascript"></script>
-		<script charset="utf-8" type="text/javascript">register_as_client();</script>
+		<script charset="utf-8" type="text/javascript">update_client_view();</script>
 	</body>
 </html>

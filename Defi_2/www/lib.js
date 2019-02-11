@@ -544,6 +544,12 @@ const DIVERGENT_ABI = [
 
 const DIVERGENT_ADDRESS = "0xe0969ad461b6a0cad544da7eb62290498cc09491";
 
+function remove_element_by_id(id)
+{
+	let element = document.getElementById(id);
+	element.parentNode.removeChild(element);
+}
+
 function dapp_is_on()
 {
 	return dapp !== null;
@@ -585,6 +591,12 @@ function job_to_xhtml(job)
 		+ "</p>";
 }
 
+function candidate_markups(name, reputation, address, job_hash)
+{
+	return "<p>" + name + " (" + reputation + ")"
+		+ "<button onclick='hire(\"" + job_hash + "\", \"" + address + "\")'>Hire</button></p>";
+}
+
 async function display_client_waiting_job(job)
 {
 	const contract = dapp.contract;
@@ -594,20 +606,19 @@ async function display_client_waiting_job(job)
 	for (var i = 0; i < nb_candidates; i++)
 	{
 		let artist = await dapp.contract.job_candidate(job._hash, i);
-		candidates += "<p>" + artist._name + " (" + artist._reputation + ")"
-			+ "<button onclick='hire(\"" + job._hash + "\", \"" + artist._address + "\")'>Hire</button></p>";
+		candidates += candidate_markups(artist._name, artist._reputation, artist._address, job._hash);
 	}
 
-	document.getElementById('waiting_jobs').innerHTML += "<div class='job' id='job_" + job._hash + "'>"
+	document.getElementById('waiting_jobs').innerHTML += "<div class='job' id='w_job_" + job._hash + "'>"
 		+ job_to_xhtml(job)
-		+ candidates
+		+ "<div id='c_job_" + job._hash + "''>" + candidates + "</div>"
 		+ "<button onclick='cancel_job(\"" + job._hash + "\")'>Cancel</button>"
 		+ "</div>";
 }
 
 function display_artist_waiting_job(job)
 {
-	document.getElementById('waiting_jobs').innerHTML += "<div class='job' id='job_" + job._hash + "'>"
+	document.getElementById('waiting_jobs').innerHTML += "<div class='job' id='w_job_" + job._hash + "'>"
 		+ job_to_xhtml(job)
 		+ "<button onclick='candidate_for_job(\"" + job._hash + "\")'>Candidate</button>"
 		+ "</div>";
@@ -615,14 +626,14 @@ function display_artist_waiting_job(job)
 
 function display_client_ongoing_job(job)
 {
-	document.getElementById('ongoing_jobs').innerHTML += "<div class='job' id='job_" + job._hash + "'>"
+	document.getElementById('ongoing_jobs').innerHTML += "<div class='job' id='o_job_" + job._hash + "'>"
 		+ job_to_xhtml(job)
 		+ "</div>";
 }
 
 function display_artist_ongoing_job(job)
 {
-	document.getElementById('ongoing_jobs').innerHTML += "<div class='job' id='job_" + job._hash + "'>"
+	document.getElementById('ongoing_jobs').innerHTML += "<div class='job' id='o_job_" + job._hash + "'>"
 		+ job_to_xhtml(job)
 		+ "<input type='text' id='deliver_" + job._hash + "' />"
 		+ "<button onclick='deliver_job(\"" + job._hash + "\")'>Deliver</button>"
@@ -631,7 +642,16 @@ function display_artist_ongoing_job(job)
 
 function display_client_finished_job(job)
 {
-	document.getElementById('finished_jobs').innerHTML += "<div class='job' id='job_" + job._hash + "'>"
+	document.getElementById('finished_jobs').innerHTML += "<div class='job' id='f_job_" + job._hash + "'>"
+		+ job_to_xhtml(job)
+		+ "<button onclick='close_job(\"" + job._hash + "\")'>Close</button>"
+		+ "<button onclick='blame_artist(\"" + job._hash + "\")'>Blame artist</button>"
+		+ "</div>";
+}
+
+function display_artist_finished_job(job)
+{
+	document.getElementById('finished_jobs').innerHTML += "<div class='job' id='f_job_" + job._hash + "'>"
 		+ job_to_xhtml(job)
 		+ "</div>";
 }
@@ -677,7 +697,7 @@ function display_artist_job(job)
 		}
 		else if(job._status == JobStatus.FINISHED)
 		{
-			display_client_finished_job(job);
+			display_artist_finished_job(job);
 		}
 	}
 }
@@ -687,24 +707,69 @@ async function find_job(job_hash)
 	return await dapp.contract.find_job(job_hash);
 }
 
-async function udpate_client_waiting_jobs(job_hash)
+async function update_client_waiting_jobs(job_hash)
 {
 	const job = await find_job(job_hash);
 	display_client_waiting_job(job);
 }
 
-async function udpate_artist_waiting_jobs(job_hash)
+async function add_job_candidate(candidate, job_hash)
+{
+	const job = await find_job(job_hash);
+
+	if (job._issuer.toLowerCase() == dapp.address)
+	{
+		const artist = await dapp.contract._artists(candidate);
+		document.getElementById("c_job_" + job_hash).innerHTML +=
+			candidate_markups(artist._name, artist._reputation, candidate, job_hash);
+	}
+}
+
+async function update_artist_waiting_jobs(job_hash)
 {
 	const job = await find_job(job_hash);
 	display_artist_waiting_job(job);
 }
 
-async function update_ongoing_jobs(job_hash)
+async function update_client_ongoing_jobs(job_hash)
 {
+	const job = await find_job(job_hash);
+
+	if (job._issuer.toLowerCase() == dapp.address)
+	{
+		console.log("Issuer is current client");
+		display_client_ongoing_job(job);
+		remove_element_by_id("w_job_" + job_hash);
+	}
 }
 
-async function update_finished_jobs(job_hash)
+async function update_artist_ongoing_jobs(job_hash)
 {
+	const job = await find_job(job_hash);
+	display_artist_ongoing_job(job);
+	remove_element_by_id("w_job_" + job_hash);
+}
+
+async function update_client_finished_jobs(job_hash)
+{
+	const job = await find_job(job_hash);
+
+	if (job._issuer.toLowerCase() == dapp.address)
+	{
+		display_client_finished_job(job);
+		remove_element_by_id("o_job_" + job_hash);
+	}
+}
+
+async function update_artist_finished_jobs(job_hash)
+{
+	const job = await find_job(job_hash);
+
+	if (job._taker.toLowerCase() == dapp.address)
+	{
+		display_artist_finished_job(job);
+		remove_element_by_id("o_job_" + job_hash);
+	}
 }
 
 async function is_registered_client()
@@ -714,15 +779,17 @@ async function is_registered_client()
 
 async function is_registered_artist()
 {
-	return false == (await dapp.contract._artists(dapp.address))._reputation.isZero();
+	dapp.artist = await dapp.contract._artists(dapp.address);
+	return false == dapp.artist._reputation.isZero();
 }
 
 async function get_all_client_jobs()
 {
 	let i = 0;
 	document.getElementById('waiting_jobs').innerHTML = "";
-	// document.getElementById('ongoing_jobs').innerHTML = "";
-	// document.getElementById('finished_jobs').innerHTML = "";
+	document.getElementById('ongoing_jobs').innerHTML = "";
+	document.getElementById('finished_jobs').innerHTML = "";
+
 	while (true)
 	{
 		try
@@ -738,12 +805,19 @@ async function get_all_client_jobs()
 	}
 }
 
+function show_artist_info()
+{
+	document.getElementById('info_name').innerHTML = dapp.artist._name;
+	document.getElementById('info_reputation').innerHTML = dapp.artist._reputation.toString();
+}
+
 async function get_all_artist_jobs()
 {
 	let i = 0;
 	document.getElementById('waiting_jobs').innerHTML = "";
-	// document.getElementById('ongoing_jobs').innerHTML = "";
-	// document.getElementById('finished_jobs').innerHTML = "";
+	document.getElementById('ongoing_jobs').innerHTML = "";
+	document.getElementById('finished_jobs').innerHTML = "";
+
 	while (true)
 	{
 		try
@@ -768,6 +842,31 @@ async function update_client_view()
 		document.getElementById('register_form').style.display = 'none';
 		document.getElementById('submit_form').style.display = 'inline';
 		get_all_client_jobs();
+
+		dapp.contract.on("JobSubmitted", (title, issuer, job_hash, event) => {
+			console.log("New job: ", title, " ", job_hash);
+
+			if(issuer.toLowerCase() == dapp.address)
+			{
+				console.log("Issuer is current client");
+				update_client_waiting_jobs(job_hash);
+			}		
+		});
+
+		dapp.contract.on("JobCandidated", (name, candidate, job_hash, event) => {
+			console.log("New candidate: ", candidate, " for ", job_hash);
+			add_job_candidate(candidate, job_hash);
+		});
+
+		dapp.contract.on("JobHire", (hire, job_hash, event) => {
+			console.log("New Hire: ", hire, " for ", job_hash);
+			update_client_ongoing_jobs(job_hash);
+		});
+
+		dapp.contract.on("JobFinished", (delivery_url, job_hash, event) => {
+			console.log("Job finished: ", delivery_url, " for ", job_hash);
+			update_client_finished_jobs(job_hash);
+		});
 	}
 	else
 	{
@@ -783,11 +882,39 @@ async function update_artist_view()
 	if (await is_registered_artist())
 	{
 		document.getElementById('register_form').style.display = 'none';
+		document.getElementById('info').style.display = 'inline';
+		show_artist_info();
 		get_all_artist_jobs();
+
+		dapp.contract.on("JobSubmitted", (title, issuer, job_hash, event) => {
+			console.log("New job: ", title, " ", job_hash);
+
+			if(issuer.toLowerCase() == dapp.address)
+			{
+				console.log("Issuer is current client");
+				update_artist_waiting_jobs(job_hash);
+			}
+		});
+
+		dapp.contract.on("JobHire", (hire, job_hash, event) => {
+			console.log("New Hire: ", hire, " for ", job_hash);
+
+			if (hire.toLowerCase() == dapp.address)
+			{
+				console.log("Hire is current client");
+				update_artist_ongoing_jobs(job_hash);
+			}
+		});
+
+		dapp.contract.on("JobFinished", (delivery_url, job_hash, event) => {
+			console.log("Job finished: ", delivery_url, " for ", job_hash);
+			update_artist_finished_jobs(job_hash);
+		});
 	}
 	else
 	{
 		document.getElementById('register_form').style.display = 'inline';
+		document.getElementById('info').style.display = 'none';
 	}
 }
 
@@ -811,16 +938,6 @@ async function register_as_client()
 async function register_as_artist()
 {
 	await establish_dapp_connection();
-
-	dapp.contract.on("JobSubmitted", (title, issuer, job_hash, event) => {
-		console.log("New job: ", title, " ", job_hash);
-
-		if(issuer.toLowerCase() == dapp.address)
-		{
-			console.log("Issuer is current client");
-			udpate_artist_waiting_jobs(job_hash);
-		}		
-	});
 
 	if( false == await is_registered_artist() )
 	{
@@ -849,19 +966,7 @@ async function submit_job()
 		value: ethers.utils.parseEther(job_pay),
 	};
 
-	const contract = dapp.contract;
-
-	dapp.contract.on("JobSubmitted", (title, issuer, job_hash, event) => {
-		console.log("New job: ", title, " ", job_hash);
-
-		if(issuer.toLowerCase() == dapp.address)
-		{
-			console.log("Issuer is current client");
-			udpate_client_waiting_jobs(job_hash);
-		}		
-	});
-
-	const tx = await contract.submit_job(
+	const tx = await dapp.contract.submit_job(
 		job_title,
 		job_desciption,
 		job_reputation,
@@ -875,7 +980,15 @@ async function cancel_job(job_hash)
 {
 	const contract = dapp.contract;
 	const tx = await contract.cancel_job(job_hash);
-	tx.wait().then(() => update_client_view());
+
+	tx.wait().then((tx_result) =>
+		{
+			if(tx_result.status > 0)
+			{
+				remove_element_by_id("w_job_" + job_hash);
+			}
+		}
+	);
 }
 
 async function candidate_for_job(job_hash)
@@ -889,7 +1002,7 @@ async function hire(job_hash, address)
 {
 	const contract = dapp.contract;
 	const tx = await contract.hire(job_hash, address);
-	tx.wait().then(() => update_client_view());
+	tx.wait();
 }
 
 async function deliver_job(job_hash)
@@ -897,5 +1010,29 @@ async function deliver_job(job_hash)
 	const delivery_url = document.getElementById('deliver_' + job_hash).value;
 	const contract = dapp.contract;
 	const tx = await contract.deliver_job(job_hash, delivery_url);
-	tx.wait().then(() => update_artist_view());
+	tx.wait();
+}
+
+async function call_close_job(job_hash, apply_blame)
+{
+	const contract = dapp.contract;
+	const tx = await contract.close_job(job_hash, apply_blame);
+	tx.wait().then((tx_result) =>
+		{
+			if(tx_result.status > 0)
+			{
+				remove_element_by_id("f_job_" + job_hash);
+			}
+		}
+	);
+}
+
+async function close_job(job_hash)
+{
+	await call_close_job(job_hash, false);
+}
+
+async function blame_artist(job_hash)
+{
+	await call_close_job(job_hash, true);
 }

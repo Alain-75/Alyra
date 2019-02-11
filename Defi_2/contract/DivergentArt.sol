@@ -210,6 +210,11 @@ contract DivergentArt
 		return cand;
 	}
 
+	function compute_contract_fee(uint256 pay) public pure returns(uint256 fee)
+	{
+		return (pay.mul(2)).div(100);
+	}
+
 	function submit_job(
 			string memory title
 		,	string memory description
@@ -219,13 +224,11 @@ contract DivergentArt
 	{
 		require(msg.value >= MINIMUM_JOB_PAY, "You have to pay at least 100 wei.");
 
-		uint fee = (msg.value.mul(2)).div(100);
-
 		Job memory job;
 		job._issuer = msg.sender;
 		job._title = title;
 		job._description = description;
-		job._pay = msg.value - fee;
+		job._pay = msg.value;
 		job._required_reputation = required_reputation;
 		job._hash = keccak256(abi.encodePacked(
 				job._issuer
@@ -241,7 +244,6 @@ contract DivergentArt
 		job._status = Status.WAITING;
 
 		_jobs.push(job);
-		_owner.transfer(fee);
 		emit JobSubmitted(job._title, job._issuer, job._hash);
 	}
 
@@ -253,7 +255,7 @@ contract DivergentArt
 		require(job._status == Status.WAITING, "Cannot cancel");
 		require(job._issuer == msg.sender, "Not your job");
 		_remove_job_at_index(index);
-		msg.sender.transfer(job._pay); // refund pay but not fees
+		msg.sender.transfer(job._pay); // refund pay and fees
 	}
 
 	function candidate_for_job(bytes32 job_hash) public registered_artist
@@ -300,7 +302,9 @@ contract DivergentArt
 		job._delivery_time = now;
 		job._status = Status.FINISHED;
 		delete job._candidates;
-		msg.sender.transfer(job._pay);
+		uint fee = compute_contract_fee(job._pay);
+		msg.sender.transfer(job._pay - fee);
+		_owner.transfer(fee);
 		Entity storage artist = _artists[msg.sender];
 		artist._reputation = _change_reputation(artist._reputation, 1);
 		emit JobFinished(delivery_url, job_hash);
@@ -317,15 +321,17 @@ contract DivergentArt
 		_remove_job_at_index(index);
 	}
 
-	function renew_job(bytes32 job_hash, bool apply_blame) public registered_client
+	function renew_job(bytes32 job_hash, bool apply_blame) public payable registered_client
 	{
 		Job storage job = _find_job(job_hash);
 		require(job._status == Status.FINISHED, "Cannot deliver");
 		require(job._issuer == msg.sender, "You are not the issuer");
+		require(msg.value >= MINIMUM_JOB_PAY, "Must pay");
 		job._taker = address(0);
 		job._take_time = 0;
 		job._delivery_time = 0;
 		job._delivery_url_hash = bytes32(0);
+		job._pay = msg.value;
 		_blame_artist(job, apply_blame);
 		emit JobSubmitted(job._title, job._issuer, job._hash);
 	}

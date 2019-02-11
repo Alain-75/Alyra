@@ -1,13 +1,13 @@
-h2
-{
-	text-align: center;
-}
-
 .column
 {
 	min-width: 20%;
 	margin: 1em;
 	float: left;
+}
+
+.column>h2
+{
+	text-align: center;
 }
 
 .job

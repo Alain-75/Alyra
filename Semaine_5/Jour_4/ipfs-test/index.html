@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+		<title>IPFS tests</title>
+		<meta name="description" content="Just an IPFS/JS test">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	</head>
+
+	<body>
+		<div>IPFS Status: <span id="status"></span></div>
+		<div>
+			<h2>Peers</h2>
+			<ul id="peer_list"></ul>
+			<button onclick="refresh_list()">Refresh</button>
+		</div>
+		<div>
+			<h2>Values</h2>
+			<p>Enter a value: <input type="text" id="add_text"><button onclick="add_text()">Add</button></p>
+			<p>Result: <span id="add_text_result"></span></p>
+			<p>Get from hash: <input type="text" id="get_text"><button onclick="get_text()">Get</button></p>
+			<p>Result: <span id="get_text_result"></span></p>
+		</div>
+		<div>
+			<h2>Images</h2>
+			<p>Enter an image: <input type="file" id="add_image"><button onclick="add_image()">Add</button></p>
+			<p>Result: <span id="add_image_result"></span></p>
+			<p>Get from hash: <input type="text" id="get_image"><button onclick="get_image()">Get</button></p>
+			<p>Result: <img id="get_image_result"></img></p>
+		</div>
+		<script src="https://unpkg.com/ipfs/dist/index.min.js"
+			charset="utf-8"
+			type="text/javascript"></script>
+		<script src="https://cdn.jsdelivr.net/npm/ipfs/dist/index.min.js"
+			charset="utf-8"
+			type="text/javascript"></script>
+		<script src="main.js"
+			charset="utf-8"
+			type="text/javascript"></script>
+		<script
+			charset="utf-8"
+			type="text/javascript">ipfs_init()</script>
+	</body>
+
+</html>

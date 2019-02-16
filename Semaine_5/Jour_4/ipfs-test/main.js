@@ -57,11 +57,8 @@ function get_text()
 function add_image()
 {
 	const image = document.getElementById("add_image").files[0]
-	// console.log(image)
+	var reader = new FileReader()
 
-	var reader = new FileReader();
-
-	// Closure to capture the file information.
 	reader.onload = ((image_file) =>
 		{
 			ipfs_server.add( ipfs_server.types.Buffer.from(reader.result) ).then( (results) =>
@@ -73,7 +70,6 @@ function add_image()
 		}
 	);
 
-	// Read in the image file as a data URL.
 	reader.readAsBinaryString(image);
 }
 

@@ -1,0 +1,151 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+namespace org.hyperpost
+
+enum TypeColis
+{
+	o LETTRE_RECOMMANDEE
+	o LETTRE_RECOMMANDEE_AR
+	o LETTRE
+	o PETIT_PAQUET
+	o GRAND_COLIS
+}
+
+enum EtatColis
+{
+	o BON
+	o ABIME
+	o DETRUIT
+}
+
+enum TypePistage
+{
+	o DEPLACEMENT
+	o PROBLEME
+}
+
+abstract participant Acteur identified by nom
+{
+	o String nom
+	--> Adresse adresse
+}
+
+participant Personne extends Acteur {}
+
+abstract participant Infrastructure extends Acteur {}
+participant BureauDePoste extends Infrastructure {}
+participant CentreDeTri extends Infrastructure {}
+
+participant Facteur extends Acteur
+{
+	--> Infrastructure rattachement
+}
+
+asset Adresse identified by texte
+{
+	o String texte
+}
+
+asset Colis identified by numero
+{
+	o TypeColis type
+	o EtatColis etat
+	o String numero
+	--> Acteur detenteur_courant
+	--> Acteur prochain_detenteur
+	--> Acteur emetteur
+	--> Acteur destinataire
+}
+
+transaction affranchir
+{
+	o TypeColis type
+	o String numero_colis
+	o EtatColis etat
+	--> BureauDePoste bureau
+	--> Acteur emetteur
+	--> Acteur destinataire
+}
+
+abstract transaction depart
+{
+	--> Acteur depuis
+	--> Colis colis
+}
+
+transaction transport extends depart
+{
+	--> Infrastructure vers	
+}
+
+transaction distribution extends depart
+{
+	--> Acteur vers
+}
+
+transaction livraison_impossible
+{
+	o String motif
+	--> Colis colis
+}
+
+transaction livraison
+{
+	--> Acteur accepteur
+	--> Colis colis
+}
+
+transaction degats
+{
+	o EtatColis etat
+	o String motif
+	--> Colis colis
+}
+
+transaction refus
+{
+	o EtatColis etat
+	o String motif
+	--> Acteur refuseur
+	--> Colis colis
+}
+
+transaction marquer_perdu
+{
+	--> Acteur detenteur
+	--> Colis colis
+}
+
+transaction renvoi
+{
+	--> Colis colis
+}
+
+event pistage
+{
+	o TypePistage type
+	o String motif
+	--> Colis colis
+}
+
+event distribution_en_cours
+{
+	--> Colis colis
+}
+
+event distribue
+{
+	--> Colis colis
+}

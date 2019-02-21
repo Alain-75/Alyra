@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+		<title>PINFINITY</title>
+		<link rel="stylesheet" href="main.css">
+		<meta name="description" content="Pinfinity finitely pins files">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	</head>
+
+	<body>
+		<div>
+			<h2>First</h2>
+			<div>
+				<h3>Enter an IPFS hash</h3>
+				<p><input type="text" id="file_hash"></p>
+			</div>
+			<h2>OR</h2>
+			<div>
+				<h3>Upload a file</h3>
+				<p><input type="file" id="file_contents"></p>
+			</div>
+			<h2>Then</h2>
+			<p><button onclick="pin()">Pin it!</button></p>
+		</div>
+		<script src="https://cdn.jsdelivr.net/npm/ipfs/dist/index.min.js"
+			charset="utf-8"
+			type="text/javascript"></script>
+		<script src="https://cdn.ethers.io/scripts/ethers-v4.min.js"
+			charset="utf-8"
+			type="text/javascript"></script>
+		<script src="main.js"
+			charset="utf-8"
+			type="text/javascript"></script>
+	</body>
+
+</html>

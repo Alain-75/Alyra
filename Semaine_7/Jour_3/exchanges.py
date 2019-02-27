@@ -7,8 +7,9 @@ SELL = 1
 
 
 
-class RESTExchange:
+class RESTAPI:
 	def __init__(self, server):
+		self._server = server
 		self._conn = httpc.HTTPSConnection(server)
 
 
@@ -16,7 +17,7 @@ class RESTExchange:
 		self._conn.request("GET", path)
 		resp = self._conn.getresponse()
 		if resp.status != 200:
-			raise RuntimeError("Cannot get book from {}: {} {}".format(server, resp.status, resp.reason))
+			raise RuntimeError("Cannot get {} from {}: {} {}".format(path, self._server, resp.status, resp.reason))
 		return resp.read()
 
 
@@ -26,8 +27,8 @@ class RESTExchange:
 
 
 class OrderBook:
-	def __init__(self, exchange, symbol):
-		self._book = exchange.build_book(symbol)
+	def __init__(self, exchange, ticker):
+		self._book = exchange.build_book(ticker)
 
 
 	def walk_book(self, book, side, qty):
@@ -56,13 +57,13 @@ class OrderBook:
 
 
 
-class Bitfinex(RESTExchange):
+class Bitfinex(RESTAPI):
 	def __init__(self):
 		super(Bitfinex,self).__init__('api.bitfinex.com')
 
 
-	def build_book(self, symbol):
-		response = self.json_query('/v1/book/' + symbol)
+	def build_book(self, ticker):
+		response = self.json_query('/v1/book/' + ticker)
 
 		return {
 			# buy BTC, paying USD
@@ -72,8 +73,8 @@ class Bitfinex(RESTExchange):
 			}
 
 
-	def last_execution(self, symbol):
-		response = self.json_query('/v2/trades/t' + symbol + '/hist?limit=1')
+	def last_execution(self, ticker):
+		response = self.json_query('/v2/trades/t' + ticker + '/hist?limit=1')
 		return {
 			'id': response[0][0],
 			'qty': response[0][2],
@@ -82,13 +83,13 @@ class Bitfinex(RESTExchange):
 
 
 
-class Bitmex(RESTExchange):
+class Bitmex(RESTAPI):
 	def __init__(self):
 		super(Bitmex,self).__init__('www.bitmex.com')
 
 
-	def build_book(self, symbol):
-		response = self.json_query('/api/v1/orderBook/L2?symbol=' + symbol)
+	def build_book(self, ticker):
+		response = self.json_query('/api/v1/orderBook/L2?symbol=' + ticker)
 
 		bid = []
 		ask = []
@@ -102,3 +103,13 @@ class Bitmex(RESTExchange):
 				ask.append( (order['price'], order['size']) )
 
 		return {'bid': bid, 'ask': ask}
+
+
+
+class Messari(RESTAPI):
+	def __init__(self):
+		super(Messari,self).__init__('data.messari.io')
+
+
+	def metrics(self, ticker):
+		return self.json_query('/api/v1/assets/' + ticker + '/metrics')

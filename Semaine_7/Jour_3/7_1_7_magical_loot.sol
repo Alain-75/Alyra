@@ -223,6 +223,7 @@ contract Loot is ERC721
 			{
 				_creator.transfer(msg.value);
 				_receive_token(msg.sender, token_);
+				emit Transfer(address(0), msg.sender, token_);
 				return token_;
 			}
 
@@ -244,6 +245,7 @@ contract Loot is ERC721
 		{
 			_object_ownership[token] = address(0);
 			_approved_for_object[token] = address(0);
+			emit Transfer(msg.sender, address(0), token);
 			// _loot is not updated because it'd necessitate a a loop
 			_loot_nb[msg.sender] -= 1;
 		}
@@ -273,6 +275,7 @@ contract Loot is ERC721
 		_receive_token(_to, _tokenId);
 		_approved_for_object[_tokenId] = address(0);
 		_loot_nb[_from] -= 1;
+		emit Transfer(_from, _to, _tokenId);
 	}
 
 	function _safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory data) internal
@@ -314,11 +317,13 @@ contract Loot is ERC721
 		require(owner != address(0));
 		require(_sender_has_approval_of(owner, _tokenId));
 		_approved_for_object[_tokenId] = _approved;
+		emit Approval(msg.sender, _approved, _tokenId);
 	}
 
 	function setApprovalForAll(address _operator, bool _approved) external
 	{
 		_approved_for_all[msg.sender][_operator] = _approved;
+		emit ApprovalForAll(msg.sender, _operator, _approved);
 	}
 
 	function getApproved(uint256 _tokenId) external view returns (address)

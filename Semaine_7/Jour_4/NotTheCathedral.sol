@@ -101,109 +101,81 @@ interface ERC721 /* is ERC165 */ {
 
 contract NotTheCathedral
 {
-	uint256 constant MIN_BID_SPREAD = 1 szabo;
+	uint256 constant MIN_CLASSICAL_BID_SPREAD = 1 szabo;
+	uint256 constant HOURLY_DUTCH_DISCOUNT_PERCENT = 5;
+	// -1 from MAX_HOURS so bid price never gets to 0 
+	uint256 constant MAX_NB_DISCOUNT_HOURS = 100/HOURLY_DUTCH_DISCOUNT_PERCENT - 1;
 
-	event AuctionStarted(bytes32 indexed hash, address minter, uint256 token, uint256 end_time);
+	enum AuctionType
+	{
+		CLASSICAL,
+		DUTCH
+	}
+
+	event AuctionStarted(bytes32 indexed hash, address minter, uint256 token, uint256 end_time, AuctionType auction_type);
 	event Bid(bytes32 indexed hash, uint256 value);
 	event AuctionRecovered(bytes32 indexed hash);
-	
+
 	struct Auction
 	{
 		uint256 _token;
 		address _ERC721_minter;
 		address payable _owner;
-		uint256 _auction_end;
-		address payable _best_bidder;
+		uint256 _start;
+		uint256 _delay;
+		AuctionType _type;
+		address payable _last_bidder;
 		uint256 _best_bid;
 	}
 
-	function auction_id(Auction memory auction) public pure returns(bytes32 hash)
+	mapping(bytes32 => Auction) public _auctions;
+	bytes32[] public _auction_registry;
+	mapping(address => uint256) private _waiting_funds;
+
+	function _auction_id(Auction memory auction) internal pure returns(bytes32 hash)
 	{
 		return keccak256(abi.encodePacked(
 				auction._token
 			,	auction._owner
-			,	auction._auction_end
+			,	auction._start
+			,	auction._delay
+			,	auction._type
 			));
 	}
 
-	// hash => auction
-	mapping(bytes32 => Auction) public _auctions;
-	// minter => token => hash
-	mapping(address => mapping(uint256 => bytes32)) public _hash_by_minter_and_token;
-
-	mapping(address => uint256) private _waiting_funds;
-
-	function initiate_auction(address minter, uint256 token, uint256 time_in_s, uint256 starting_price) external
+	function _is_auction_open(Auction memory auction) internal view returns(bool open)
 	{
-		require(address(this) == ERC721(minter).getApproved(token));
-
-		Auction memory auction;
-		auction._token = token;
-		auction._ERC721_minter = minter;
-		auction._owner = msg.sender;
-		auction._auction_end = now + time_in_s;
-		auction._best_bid = starting_price;
-		bytes32 hash = auction_id(auction);
-		_auctions[hash] = auction;
-		_hash_by_minter_and_token[minter][token] = hash;
-		emit AuctionStarted(hash, minter, token, auction._auction_end);
+		// If auction is dutch, it ends at first bid
+		return now < auction._start + auction._delay
+			&& (auction._type == AuctionType.CLASSICAL || auction._last_bidder == address(0));
 	}
 
-	function bid(bytes32 hash) external payable
+	function is_auction_open(bytes32 hash) external view returns(bool open)
 	{
-		Auction storage auction = _auctions[hash];
-		require(auction._token != 0);
-		require(auction._auction_end < now);
-		require(auction._best_bid + MIN_BID_SPREAD <= msg.value);
-
-		if (auction._best_bidder != address(0))
-		{
-			_waiting_funds[auction._best_bidder] = auction._best_bid;
-		}
-
-		auction._best_bid = msg.value;
-		auction._best_bidder = msg.sender;
-
-		emit Bid(hash, msg.value);
+		return _is_auction_open(_auctions[hash]);
 	}
 
-	function recover_funds() external
+	function _current_dutch_bid(Auction memory auction) internal view returns(uint256 bid)
 	{
-		uint256 value = _waiting_funds[msg.sender];
+		uint256 nb_hours = (now - auction._start) % 1 hours;
 
-		if (value > 0)
+		if (nb_hours > MAX_NB_DISCOUNT_HOURS)
 		{
-			msg.sender.transfer(value);
-			_waiting_funds[msg.sender] = 0;
+			nb_hours = MAX_NB_DISCOUNT_HOURS;
 		}
+
+		return (auction._best_bid * (100 - nb_hours*HOURLY_DUTCH_DISCOUNT_PERCENT))/100;
 	}
 
-	function recover_auction(bytes32 hash) external returns(bool recovery_approved)
+	function current_dutch_bid(bytes32 hash) external view returns(uint256 bid)
 	{
-		Auction storage auction = _auctions[hash];
-		require(auction._auction_end >= now);
-		require(auction._best_bidder == msg.sender);
-
-		emit AuctionRecovered(hash);
-
-		ERC721 minter = ERC721(auction._ERC721_minter);
-
-		if ( auction._token != 0 && address(this) == minter.getApproved(auction._token) )
-		{
-			minter.safeTransferFrom(auction._owner, msg.sender, auction._token);
-			auction._token = 0;
-			return true;
-		}
-
-		_waiting_funds[msg.sender] = auction._best_bid;
-		auction._best_bidder = address(0);
-		return false;
+		return _current_dutch_bid(_auctions[hash]);
 	}
 
 	function _is_auction_recovered(Auction memory auction) internal pure returns(bool)
 	{
-		return	( auction._token == 0 && auction._best_bidder != address(0) )
-			||	( auction._token != 0 && auction._best_bidder == address(0) );
+		return	( auction._token == 0 && auction._last_bidder != address(0) )
+			||	( auction._token != 0 && auction._last_bidder == address(0) );
 	}
 
 	function is_auction_recovered(bytes32 hash) external view returns(bool)
@@ -211,27 +183,118 @@ contract NotTheCathedral
 		return _is_auction_recovered(_auctions[hash]);
 	}
 
-	function end_auction(bytes32 hash) external returns(bool funds_available)
+	function _is_auction_ended(Auction memory auction) internal pure returns (bool)
 	{
-		Auction storage auction = _auctions[hash];
-		require(_is_auction_recovered(auction));
-		require(auction._auction_end >= now);
-		require(auction._owner == msg.sender);
-
-		auction._owner = address(0);
-
-		if ( auction._token == 0 )
-		{
-			_waiting_funds[msg.sender] = auction._best_bid;
-			return true;
-		}
-
-		auction._token = 0;
-		return false;
+		return auction._owner == address(0);
 	}
 
 	function is_auction_ended(bytes32 hash) external view returns (bool)
 	{
-		return _auctions[hash]._owner == address(0);
+		return _is_auction_ended(_auctions[hash]);
+	}
+
+	function initiate_auction(address minter, uint256 token, uint256 duration_in_s, uint256 starting_price, bool dutch) external
+	{
+		require(address(this) == ERC721(minter).getApproved(token));
+
+		Auction memory auction;
+		auction._token = token;
+		auction._ERC721_minter = minter;
+		auction._owner = msg.sender;
+		auction._start = now;
+		auction._delay = duration_in_s;
+		auction._type = dutch ? AuctionType.DUTCH : AuctionType.CLASSICAL;
+		auction._best_bid = starting_price;
+		bytes32 hash = _auction_id(auction);
+		_auctions[hash] = auction;
+		_auction_registry.push(hash);
+		emit AuctionStarted(hash, minter, token, auction._start + auction._delay, auction._type);
+	}
+
+	function bid_classical(bytes32 hash) external payable
+	{
+		Auction storage auction = _auctions[hash];
+		require(auction._type == AuctionType.CLASSICAL);
+		require(auction._token != 0);
+		require(_is_auction_open(auction));
+		require(auction._best_bid + MIN_CLASSICAL_BID_SPREAD <= msg.value);
+
+		if (auction._last_bidder != address(0))
+		{
+			_waiting_funds[auction._last_bidder] += auction._best_bid;
+		}
+
+		auction._best_bid = msg.value;
+		auction._last_bidder = msg.sender;
+		emit Bid(hash, msg.value);
+	}
+
+	function bid_dutch(bytes32 hash) external payable
+	{
+		Auction storage auction = _auctions[hash];
+		require(auction._type == AuctionType.DUTCH);
+		require(auction._token != 0);
+		require(_is_auction_open(auction));
+		require(msg.value >= _current_dutch_bid(auction));
+		auction._best_bid = msg.value;
+		auction._last_bidder = msg.sender;
+		emit Bid(hash, msg.value);
+	}
+
+	function recover_funds() external
+	{
+		uint256 value = _waiting_funds[msg.sender];
+		_waiting_funds[msg.sender] = 0;
+
+		if (value > 0)
+		{
+			msg.sender.transfer(value);
+		}
+	}
+
+	function recover_auction(bytes32 hash) external returns(bool recovery_approved)
+	{
+		Auction storage auction = _auctions[hash];
+		require(auction._last_bidder == msg.sender);
+		require(false == _is_auction_open(auction));
+		require(false == _is_auction_ended(auction));
+
+		emit AuctionRecovered(hash);
+
+		ERC721 minter = ERC721(auction._ERC721_minter);
+
+		uint256 token = auction._token;
+		auction._token = 0;
+
+		if ( token != 0 && address(this) == minter.getApproved(token) )
+		{
+			minter.safeTransferFrom(auction._owner, msg.sender, token);
+			return true;
+		}
+
+		_waiting_funds[msg.sender] += auction._best_bid;
+		auction._last_bidder = address(0);
+		return false;
+	}
+
+	function end_auction(bytes32 hash) external returns(bool funds_available)
+	{
+		Auction storage auction = _auctions[hash];
+		require(auction._owner == msg.sender);
+		require(false == _is_auction_open(auction));
+		require(_is_auction_recovered(auction));
+		require(false == _is_auction_ended(auction));
+
+		uint256 token = auction._token;
+		auction._token = 0;
+		auction._owner = address(0);
+
+		if ( token == 0 )
+		{
+			_waiting_funds[msg.sender] += auction._best_bid;
+			return true;
+		}
+
+		return false;
 	}
 }

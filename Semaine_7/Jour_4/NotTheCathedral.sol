@@ -195,7 +195,9 @@ contract NotTheCathedral
 
 	function initiate_auction(address minter, uint256 token, uint256 duration_in_s, uint256 starting_price, bool dutch) external
 	{
-		require(address(this) == ERC721(minter).getApproved(token));
+		ERC721 erc721_interface = ERC721(minter);
+		require(msg.sender == erc721_interface.ownerOf(token));
+		require(address(this) == erc721_interface.getApproved(token));
 
 		Auction memory auction;
 		auction._token = token;

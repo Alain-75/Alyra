@@ -327,7 +327,7 @@ contract TheHyperPoop is ERC721
 
 	/* INTERNAL METHODS */
 
-	function _poop_exists(uint256 token) internal view returns(bool)
+	function _poop_exists(uint256 token) internal view returns(bool this_is_a_real_poop)
 	{
 		return _poop_ownership[token] != address(0);
 	}
@@ -359,7 +359,7 @@ contract TheHyperPoop is ERC721
 		return poop;
 	}
 
-	function _sender_has_approval_of(address someguy, uint256 token) internal view returns(bool yay_or_nay)
+	function _sender_has_approval_of(address someguy, uint256 token) internal view returns(bool yay_or_poop)
 	{
 		return msg.sender == someguy
 			||	_approved_for_this_poop[token] == msg.sender

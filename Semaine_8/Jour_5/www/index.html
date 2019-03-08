@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="Pay your buddy">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+		<!-- link rel="stylesheet" href="main.css" -->
+
+		<title>Paybuddy</title>
+
+		<script src="https://cdn.ethers.io/scripts/ethers-v4.min.js"
+			charset="utf-8"
+			type="text/javascript"></script>
+		<script src="lib.js"
+			charset="utf-8"
+			type="text/javascript"></script>
+	</head>
+
+	<body>
+		<div>
+			<h1 id="loading">Loading&hellip;</h1>
+			<div id="forms">
+				<div>Balance: <span class="balance"></span></div>
+				<div id="eth_connection">
+					<h2>First</h2>
+					<h3>Connect your with your Eth provider</h3>
+					<p id="connect_eth_form"><button onclick="eth_connect()">Connect</button></p>
+					<p id="eth_connected">Connected</p>
+				</div>
+				<div id="channel_connection">
+					<h2>Second</h2>
+					<h3>Connect to an existing channel</h3>
+					<p id="connect_channel_form">Address: <input id="channel_address"><button onclick="channel_connect()">Connect</button></p>
+					<p id="channel_connected">Connected</p>
+					<h3>OR</h3>
+					<h3>Create a channel</h3>
+					<p id="create_channel_form">Amount: <input type="number" id="channel_amount"> Counterpart: <input id="counterpart_address"><button onclick="send()">Create</button></p>
+					<p id="channel_created">Created</p>
+				</div>
+				<div id="send_eth">
+					<h2>Third</h2>
+					<h3>Send eth</h3>
+					<p id="send_form">Amount: <input type="number" id="send_amount"> finney<button onclick="send()">Send</button></p>
+					<div id="send_tx">
+						<p>Send transaction:</p>
+						<p id="send_tx_content"></p>
+					</div>
+				</div>
+				<div id="receive_eth">
+					<h2>Fourth</h2>
+					<h3>Receive eth</h3>
+					<p id="send_form">Transaction: <textarea id="receive_tx"></textarea><button onclick="receive()">Receive</button></p>
+					<div id="send_tx">
+						<p>Receive transaction:</p>
+						<p id="send_tx_content"></p>
+					</div>
+				</div>
+			</div>
+			<div id="messages"></div>
+		</div>
+		<script type="text/javascript">init()</script>
+	</body>
+
+</html>

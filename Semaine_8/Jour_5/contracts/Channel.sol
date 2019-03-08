@@ -22,13 +22,14 @@ contract Channel
 	uint public _counterpart_balance;
 	uint constant NB_BLOCK_BEFORE_RECOVER = 24; // more or less six minutes
 	uint constant NB_BLOCK_BEFORE_LIQUIDATE = NB_BLOCK_BEFORE_RECOVER * 10 * 24 * 30; // somewhat akin to a month
+	uint constant MIN_CHANNEL_AMOUNT = 1000 wei;
 
-	constructor(uint amount, address counterpart) public payable
+	constructor(address initiator, address counterpart) public payable
 	{
-		require(msg.value >= amount);
+		require(msg.value >= MIN_CHANNEL_AMOUNT);
 		_state = State.WAITING;
-		_amount = amount;
-		_initiator = msg.sender;
+		_amount = msg.value;
+		_initiator = initiator;
 		_counterpart = counterpart;
 		_initiator_balance = msg.value;
 	}
@@ -142,8 +143,9 @@ contract Channels
 {
 	Channel[] public _channels;
 
-	function add_channel(uint amount, address counterpart) external payable
+	function add_channel(address counterpart) external payable returns(address channel)
 	{
-		_channels.push((new Channel).value(msg.value)(amount, counterpart));
+		_channels.push((new Channel).value(msg.value)(msg.sender, counterpart));
+		return address(_channels[_channels.length-1]);
 	}
 }

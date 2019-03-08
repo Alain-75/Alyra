@@ -6,7 +6,7 @@
 		<meta name="description" content="Pay your buddy">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-		<!-- link rel="stylesheet" href="main.css" -->
+		<link rel="stylesheet" href="main.css">
 
 		<title>Paybuddy</title>
 
@@ -21,22 +21,27 @@
 	<body>
 		<div>
 			<h1 id="loading">Loading&hellip;</h1>
-			<div id="forms">
-				<div>Balance: <span class="balance"></span></div>
+			<div id="forms" style="display: none">
+				<div id="info">
+					<h2>Balance:</h2>
+					<p id="info.balance"></p>
+					<h2>Recipient:</h2>
+					<p id="info.recipient"></p>
+				</div>
 				<div id="eth_connection">
 					<h2>First</h2>
-					<h3>Connect your with your Eth provider</h3>
+					<h3>Connect your Eth provider</h3>
 					<p id="connect_eth_form"><button onclick="eth_connect()">Connect</button></p>
 					<p id="eth_connected">Connected</p>
 				</div>
 				<div id="channel_connection">
 					<h2>Second</h2>
 					<h3>Connect to an existing channel</h3>
-					<p id="connect_channel_form">Address: <input id="channel_address"><button onclick="channel_connect()">Connect</button></p>
-					<p id="channel_connected">Connected</p>
+					<p><button onclick="list_channels()">Refesh</button></p>
+					<p id="channel_list"></p>
 					<h3>OR</h3>
 					<h3>Create a channel</h3>
-					<p id="create_channel_form">Amount: <input type="number" id="channel_amount"> Counterpart: <input id="counterpart_address"><button onclick="send()">Create</button></p>
+					<p id="create_channel_form">Amount: <input type="number" id="channel_amount"> Counterpart: <input id="counterpart_address"><button onclick="channel_create()">Create</button></p>
 					<p id="channel_created">Created</p>
 				</div>
 				<div id="send_eth">

@@ -1,0 +1,35 @@
+#info
+{
+	min-width: 20em;
+	position: fixed;
+	top: 0;
+	right: 0;
+}
+
+#messages
+{
+	min-width: 20em;
+	position: fixed;
+	bottom: 0;
+	right: 0;
+}
+
+.state_0
+{
+	color: orange;
+}
+
+.state_1
+{
+	color: green;
+}
+
+.state_2
+{
+	color: red;
+}
+
+.state_3
+{
+	color: black;
+}

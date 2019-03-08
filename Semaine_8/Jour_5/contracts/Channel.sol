@@ -4,6 +4,9 @@ import 'github.com/OpenZeppelin/openzeppelin-solidity/contracts/cryptography/ECD
 
 contract Channel
 {
+	event Active(uint initiator_balance, uint counterpart_balance);
+	event Closing(uint last_nonce, uint initiator_balance, uint counterpart_balance);
+
 	enum State
 	{
 		WAITING, ACTIVE, CLOSING, CLOSED
@@ -30,11 +33,17 @@ contract Channel
 		_initiator_balance = msg.value;
 	}
 
-	function cancel() external
+	function _on_cancel() internal
 	{
-		require(msg.sender == _initiator && _state == State.WAITING);
 		_closing_block = block.number;
 		_state = State.CLOSING;
+		emit Closing(_last_nonce, _initiator_balance, _counterpart_balance);
+	}
+
+	function stop_wait() external
+	{
+		require(msg.sender == _initiator && _state == State.WAITING);
+		_on_cancel();
 	}
 
 	function counterpart_join() external payable
@@ -45,6 +54,7 @@ contract Channel
 				);
 		_state = State.ACTIVE;
 		_counterpart_balance += msg.value;
+		emit Active(_initiator_balance, _counterpart_balance);
 	}
 
 	function initiator_fund() external payable
@@ -88,6 +98,13 @@ contract Channel
 		_initiator_balance = initiator_balance;
 		_counterpart_balance = counterpart_balance;
 		_last_nonce = nonce;
+		emit Closing(_last_nonce, _initiator_balance, _counterpart_balance);
+	}
+
+	function cancel() external
+	{
+		require(_state == State.ACTIVE && msg.sender == _initiator || msg.sender == _counterpart);
+		_on_cancel();
 	}
 
 	function recover() external
